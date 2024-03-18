@@ -1,0 +1,12 @@
+[package]
+name = "nu_plugin_ulid"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nu-plugin = "0.91.0"
+nu-protocol = { version = "0.91.0", features = ["plugin"] }
+ulid = { version = "1.1.2", features = ["uuid"] }
+uuid = "1.7.0"
