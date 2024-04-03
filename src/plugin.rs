@@ -1,8 +1,8 @@
 use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Local, Utc};
-use nu_plugin::{EvaluatedCall, LabeledError, Plugin};
-use nu_protocol::{PluginExample, PluginSignature, Type, Value};
+use nu_plugin::{EngineInterface, EvaluatedCall, Plugin, SimplePluginCommand};
+use nu_protocol::{Example, LabeledError, Signature, Type, Value};
 use ulid::Ulid;
 
 pub struct UlidPlugin;
@@ -14,35 +14,26 @@ impl UlidPlugin {
 }
 
 impl Plugin for UlidPlugin {
-    fn signature(&self) -> Vec<PluginSignature> {
-        vec![RandomUlid.signature(), ParseUlid.signature()]
-    }
-
-    fn run(
-        &mut self,
-        name: &str,
-        _config: &Option<Value>,
-        call: &nu_plugin::EvaluatedCall,
-        input: &Value,
-    ) -> Result<Value, nu_plugin::LabeledError> {
-        match name {
-            "random ulid" => RandomUlid.run(self, (), call, input),
-            "parse ulid" => ParseUlid.run(self, (), call, input),
-            _ => Err(LabeledError {
-                label: "Plugin call with wrong name signature".into(),
-                msg: "the signature used to call the plugin does not match any name in the plugin signature vector".into(),
-                span: Some(call.head),
-            })
-        }
+    fn commands(&self) -> Vec<Box<dyn nu_plugin::PluginCommand<Plugin = Self>>> {
+        vec![Box::new(RandomUlid), Box::new(ParseUlid)]
     }
 }
 
 pub struct RandomUlid;
 
-impl RandomUlid {
-    fn signature(&self) -> PluginSignature {
-        PluginSignature::build("random ulid")
-            .usage("Generate a random ulid")
+impl SimplePluginCommand for RandomUlid {
+    type Plugin = UlidPlugin;
+
+    fn name(&self) -> &str {
+        "random ulid"
+    }
+
+    fn usage(&self) -> &str {
+        "Generate a random ulid"
+    }
+
+    fn signature(&self) -> Signature {
+        Signature::build(self.name())
             .search_terms(vec!["generate".into(), "ulid".into(), "uuid".into()])
             .input_output_types(vec![
                 (Type::Nothing, Type::String),
@@ -55,14 +46,14 @@ impl RandomUlid {
                     Type::String,
                 ),
                 (
-                    Type::Record(vec![
-                        (K_TS.into(), Type::Date),
-                        (K_RND.into(), Type::Int),
-                    ]),
+                    Type::Record(vec![(K_TS.into(), Type::Date), (K_RND.into(), Type::Int)]),
                     Type::String,
                 ),
                 (Type::Record(vec![(K_TS.into(), Type::Date)]), Type::String),
-                (Type::Record(vec![(K_RND.into(), Type::String)]), Type::String),
+                (
+                    Type::Record(vec![(K_RND.into(), Type::String)]),
+                    Type::String,
+                ),
                 (Type::Record(vec![(K_RND.into(), Type::Int)]), Type::String),
             ])
             .switch(
@@ -75,34 +66,41 @@ impl RandomUlid {
                 "Fill the random portion of the ulid with ones",
                 Some('1'),
             )
-            .plugin_examples(vec![
-                PluginExample {
-                    description: "Generate a random ulid based on the current time".into(),
-                    example: "random ulid".into(),
-                    result: Some(Value::test_string(Ulid::new().to_string())),
-                },
-                PluginExample {
-                    description: "Generate a random ulid based on the given timestamp".into(),
-                    example: "2024-03-19T11:46:00 | random ulid".into(),
-                    result: Some(Value::test_string(
-                        Ulid::from_datetime(
-                            SystemTime::UNIX_EPOCH + Duration::from_nanos(1710848760000000000),
-                        )
-                        .to_string(),
-                    )),
-                },
-                PluginExample {
-                    description: "Generate a ulid based on the current time with the random portion all set to 0".into(),
-                    example: "random ulid --zeroed".into(),
-                    result: Some(Value::test_string(Ulid::from_parts(unix_millis(None), 0).to_string())),
-                },
-            ])
+    }
+
+    fn examples(&self) -> Vec<Example> {
+        vec![
+            Example {
+                description: "Generate a random ulid based on the current time".into(),
+                example: "random ulid".into(),
+                result: Some(Value::test_string(Ulid::new().to_string())),
+            },
+            Example {
+                description: "Generate a random ulid based on the given timestamp".into(),
+                example: "2024-03-19T11:46:00 | random ulid".into(),
+                result: Some(Value::test_string(
+                    Ulid::from_datetime(
+                        SystemTime::UNIX_EPOCH + Duration::from_nanos(1710848760000000000),
+                    )
+                    .to_string(),
+                )),
+            },
+            Example {
+                description:
+                    "Generate a ulid based on the current time with the random portion all set to 0"
+                        .into(),
+                example: "random ulid --zeroed".into(),
+                result: Some(Value::test_string(
+                    Ulid::from_parts(unix_millis(None), 0).to_string(),
+                )),
+            },
+        ]
     }
 
     fn run(
         &self,
         _plugin: &UlidPlugin,
-        _engine: (),
+        _engine: &EngineInterface,
         call: &EvaluatedCall,
         input: &Value,
     ) -> Result<Value, LabeledError> {
@@ -117,14 +115,13 @@ impl RandomUlid {
                 self.selected_randomness(call, val.get(K_RND))?,
             ),
             _ => {
-                return Err(LabeledError {
-                    label: "Invalid input".into(),
-                    msg: format!(
+                return Err(LabeledError::new("Invalid input").with_label(
+                    format!(
                         "Input type of {} is not supported",
                         input.get_type().to_string()
                     ),
-                    span: Some(input.span()),
-                })
+                    input.span(),
+                ))
             }
         };
 
@@ -153,33 +150,26 @@ impl RandomUlid {
             call.has_flag("oned").unwrap(),
             input,
         ) {
-            (true, true, _) => Err(LabeledError {
-                label: "Flag error".into(),
-                msg: "Cannot set --zeroed and --oned at the same time".into(),
-                span: Some(call.head),
-            }),
+            (true, true, _) => Err(LabeledError::new("Flag error")
+                .with_label("Cannot set --zeroed and --oned at the same time", call.head)),
             (true, false, _) => Ok(UlidRandom::Zeros),
             (false, true, _) => Ok(UlidRandom::Ones),
             (false, false, None) => Ok(UlidRandom::Random),
             (false, false, Some(input)) => match input {
                 Value::String { val, internal_span } => {
                     Ok(UlidRandom::Set(val.parse::<u128>().map_err(|e| {
-                        LabeledError {
-                            label: "Invalid number".into(),
-                            msg: e.to_string(),
-                            span: Some(*internal_span),
-                        }
+                        LabeledError::new("Invalid number")
+                            .with_label(e.to_string(), *internal_span)
                     })?))
                 }
                 Value::Int { val, .. } => Ok(UlidRandom::Set(*val as u128)),
-                _ => Err(LabeledError {
-                    label: "Invalid number".into(),
-                    msg: format!(
+                _ => Err(LabeledError::new("Invalid number").with_label(
+                    format!(
                         "{} is not a valid number",
                         input.to_abbreviated_string(&nu_protocol::Config::default())
                     ),
-                    span: Some(input.span()),
-                }),
+                    input.span(),
+                )),
             },
         }
     }
@@ -208,10 +198,19 @@ pub struct ParseUlid;
 static K_TS: &str = "timestamp";
 static K_RND: &str = "random";
 
-impl ParseUlid {
-    fn signature(&self) -> PluginSignature {
-        PluginSignature::build("parse ulid")
-            .usage("Parse a ulid into a date")
+impl SimplePluginCommand for ParseUlid {
+    type Plugin = UlidPlugin;
+
+    fn name(&self) -> &str {
+        "parse ulid"
+    }
+
+    fn usage(&self) -> &str {
+        "Parse a ulid into a date"
+    }
+
+    fn signature(&self) -> Signature {
+        Signature::build(self.name())
             .search_terms(vec!["parse".into(), "ulid".into(), "date".into()])
             .input_output_types(vec![(
                 Type::String,
@@ -220,28 +219,26 @@ impl ParseUlid {
                     (K_RND.into(), Type::String),
                 ]),
             )])
-            .plugin_examples(vec![PluginExample {
-                description: "Generate a ulid and parse out the date portion".into(),
-                example: "random ulid | parse ulid | get timestamp".into(),
-                result: Some(Value::test_date(Local::now().fixed_offset())),
-            }])
+    }
+
+    fn examples(&self) -> Vec<Example> {
+        vec![Example {
+            description: "Generate a ulid and parse out the date portion".into(),
+            example: "random ulid | parse ulid | get timestamp".into(),
+            result: Some(Value::test_date(Local::now().fixed_offset())),
+        }]
     }
 
     fn run(
         &self,
         _plugin: &UlidPlugin,
-        _engine: (),
+        _engine: &EngineInterface,
         call: &EvaluatedCall,
         input: &Value,
     ) -> Result<Value, LabeledError> {
-        let ulid: Ulid = input
-            .coerce_str()?
-            .parse::<Ulid>()
-            .map_err(|e| LabeledError {
-                label: "Failed to parse ulid".into(),
-                msg: e.to_string(),
-                span: Some(input.span()),
-            })?;
+        let ulid: Ulid = input.coerce_str()?.parse::<Ulid>().map_err(|e| {
+            LabeledError::new("Failed to parse ulid").with_label(e.to_string(), input.span())
+        })?;
 
         let date: DateTime<Utc> = ulid.datetime().into();
         let date = Value::date(date.fixed_offset(), call.head);

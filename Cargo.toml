@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_ulid"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/lizclipse/nu_plugin_ulid"
@@ -9,11 +9,11 @@ description = "A nushell plugin that adds various ulid commands"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4.35"
-nu-plugin = "0.91.0"
-nu-protocol = { version = "0.91.0", features = ["plugin"] }
+chrono = "0.4.37"
+nu-plugin = "0.92.0"
+nu-protocol = { version = "0.92.0", features = ["plugin"] }
 ulid = { version = "1.1.2", features = ["uuid"] }
-uuid = "1.7.0"
+uuid = "1.8.0"
 
 [profile.release]
 codegen-units = 1
