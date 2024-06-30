@@ -17,6 +17,10 @@ impl Plugin for UlidPlugin {
     fn commands(&self) -> Vec<Box<dyn nu_plugin::PluginCommand<Plugin = Self>>> {
         vec![Box::new(RandomUlid), Box::new(ParseUlid)]
     }
+
+    fn version(&self) -> String {
+        env!("CARGO_PKG_VERSION").into()
+    }
 }
 
 pub struct RandomUlid;
