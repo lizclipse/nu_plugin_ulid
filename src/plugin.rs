@@ -7,6 +7,12 @@ use ulid::Ulid;
 
 pub struct UlidPlugin;
 
+impl Default for UlidPlugin {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UlidPlugin {
     pub fn new() -> Self {
         Self
@@ -84,13 +90,13 @@ impl SimplePluginCommand for RandomUlid {
     fn examples(&self) -> Vec<Example> {
         vec![
             Example {
-                description: "Generate a random ulid based on the current time".into(),
-                example: "random ulid".into(),
+                description: "Generate a random ulid based on the current time",
+                example: "random ulid",
                 result: Some(Value::test_string(Ulid::new().to_string())),
             },
             Example {
-                description: "Generate a random ulid based on the given timestamp".into(),
-                example: "2024-03-19T11:46:00 | random ulid".into(),
+                description: "Generate a random ulid based on the given timestamp",
+                example: "2024-03-19T11:46:00 | random ulid",
                 result: Some(Value::test_string(
                     Ulid::from_datetime(
                         SystemTime::UNIX_EPOCH + Duration::from_nanos(1710848760000000000),
@@ -100,9 +106,8 @@ impl SimplePluginCommand for RandomUlid {
             },
             Example {
                 description:
-                    "Generate a ulid based on the current time with the random portion all set to 0"
-                        .into(),
-                example: "random ulid --zeroed".into(),
+                    "Generate a ulid based on the current time with the random portion all set to 0",
+                example: "random ulid --zeroed",
                 result: Some(Value::test_string(
                     Ulid::from_parts(unix_millis(None), 0).to_string(),
                 )),
@@ -131,7 +136,7 @@ impl SimplePluginCommand for RandomUlid {
                 return Err(LabeledError::new("Invalid input").with_label(
                     format!(
                         "Input type of {} is not supported",
-                        input.get_type().to_string()
+                        input.get_type()
                     ),
                     input.span(),
                 ))
@@ -236,8 +241,8 @@ impl SimplePluginCommand for ParseUlid {
 
     fn examples(&self) -> Vec<Example> {
         vec![Example {
-            description: "Generate a ulid and parse out the date portion".into(),
-            example: "random ulid | parse ulid | get timestamp".into(),
+            description: "Generate a ulid and parse out the date portion",
+            example: "random ulid | parse ulid | get timestamp",
             result: Some(Value::test_date(Local::now().fixed_offset())),
         }]
     }
