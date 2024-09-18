@@ -38,7 +38,7 @@ impl SimplePluginCommand for RandomUlid {
         "random ulid"
     }
 
-    fn usage(&self) -> &str {
+    fn description(&self) -> &str {
         "Generate a random ulid"
     }
 
@@ -134,10 +134,7 @@ impl SimplePluginCommand for RandomUlid {
             ),
             _ => {
                 return Err(LabeledError::new("Invalid input").with_label(
-                    format!(
-                        "Input type of {} is not supported",
-                        input.get_type()
-                    ),
+                    format!("Input type of {} is not supported", input.get_type()),
                     input.span(),
                 ))
             }
@@ -223,7 +220,7 @@ impl SimplePluginCommand for ParseUlid {
         "parse ulid"
     }
 
-    fn usage(&self) -> &str {
+    fn description(&self) -> &str {
         "Parse a ulid into a date"
     }
 
