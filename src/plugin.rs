@@ -87,7 +87,7 @@ impl SimplePluginCommand for RandomUlid {
             )
     }
 
-    fn examples(&self) -> Vec<Example> {
+    fn examples(&'_ self) -> Vec<Example<'_>> {
         vec![
             Example {
                 description: "Generate a random ulid based on the current time",
@@ -171,12 +171,11 @@ impl RandomUlid {
             (false, true, _) => Ok(UlidRandom::Ones),
             (false, false, None) => Ok(UlidRandom::Random),
             (false, false, Some(input)) => match input {
-                Value::String { val, internal_span } => {
-                    Ok(UlidRandom::Set(val.parse::<u128>().map_err(|e| {
-                        LabeledError::new("Invalid number")
-                            .with_label(e.to_string(), *internal_span)
-                    })?))
-                }
+                Value::String {
+                    val, internal_span, ..
+                } => Ok(UlidRandom::Set(val.parse::<u128>().map_err(|e| {
+                    LabeledError::new("Invalid number").with_label(e.to_string(), *internal_span)
+                })?)),
                 Value::Int { val, .. } => Ok(UlidRandom::Set(*val as u128)),
                 _ => Err(LabeledError::new("Invalid number").with_label(
                     format!(
@@ -236,7 +235,7 @@ impl SimplePluginCommand for ParseUlid {
             )])
     }
 
-    fn examples(&self) -> Vec<Example> {
+    fn examples(&'_ self) -> Vec<Example<'_>> {
         vec![Example {
             description: "Generate a ulid and parse out the date portion",
             example: "random ulid | parse ulid | get timestamp",
