@@ -2,8 +2,12 @@ use std::time::{Duration, SystemTime};
 
 use chrono::{DateTime, Local, Utc};
 use nu_plugin::{EngineInterface, EvaluatedCall, Plugin, SimplePluginCommand};
-use nu_protocol::{Example, LabeledError, Signature, Type, Value};
+use nu_protocol::{Example, LabeledError, Signature, Span, Type, Value};
 use ulid::Ulid;
+
+static ERR_INCOMPAT_ARGS: &str = "nu_plugin_ulid::incompatible_args";
+static ERR_INVALID_INT: &str = "nu_plugin_ulid::invalid_int";
+static ERR_INVALID_ULID: &str = "nu_plugin_ulid::invalid_ulid";
 
 pub struct UlidPlugin;
 
@@ -77,12 +81,12 @@ impl SimplePluginCommand for RandomUlid {
             ])
             .switch(
                 "zeroed",
-                "Fill the random portion of the ulid with zeros",
+                "Fill the random portion of the ulid with zeros (incompatible with --oned)",
                 Some('0'),
             )
             .switch(
                 "oned",
-                "Fill the random portion of the ulid with ones",
+                "Fill the random portion of the ulid with ones (incompatible with --zeroed)",
                 Some('1'),
             )
     }
@@ -106,7 +110,7 @@ impl SimplePluginCommand for RandomUlid {
             },
             Example {
                 description:
-                    "Generate a ulid based on the current time with the random portion all set to 0",
+                    "Generate a ulid based on the current time with the random portion all set to 0 (useful when sorting or comparing ULIDs)",
                 example: "random ulid --zeroed",
                 result: Some(Value::test_string(
                     Ulid::from_parts(unix_millis(None), 0).to_string(),
@@ -166,7 +170,12 @@ impl RandomUlid {
             input,
         ) {
             (true, true, _) => Err(LabeledError::new("Flag error")
-                .with_label("Cannot set --zeroed and --oned at the same time", call.head)),
+                .with_label(
+                    "Cannot set --zeroed (-0) and --oned (-1) at the same time",
+                    Span::merge_many(call.named.iter().map(|n| n.0.span)),
+                )
+                .with_code(ERR_INCOMPAT_ARGS)
+                .with_help("try removing one of the flags")),
             (true, false, _) => Ok(UlidRandom::Zeros),
             (false, true, _) => Ok(UlidRandom::Ones),
             (false, false, None) => Ok(UlidRandom::Random),
@@ -174,16 +183,20 @@ impl RandomUlid {
                 Value::String {
                     val, internal_span, ..
                 } => Ok(UlidRandom::Set(val.parse::<u128>().map_err(|e| {
-                    LabeledError::new("Invalid number").with_label(e.to_string(), *internal_span)
+                    LabeledError::new("Invalid random value")
+                        .with_label(e.to_string(), *internal_span)
+                        .with_code(ERR_INVALID_INT)
                 })?)),
                 Value::Int { val, .. } => Ok(UlidRandom::Set(*val as u128)),
-                _ => Err(LabeledError::new("Invalid number").with_label(
-                    format!(
-                        "{} is not a valid number",
-                        input.to_abbreviated_string(&nu_protocol::Config::default())
-                    ),
-                    input.span(),
-                )),
+                _ => Err(LabeledError::new("Invalid random value")
+                    .with_label(
+                        format!(
+                            "{} is not a valid number",
+                            input.to_abbreviated_string(&nu_protocol::Config::default())
+                        ),
+                        input.span(),
+                    )
+                    .with_code(ERR_INVALID_INT)),
             },
         }
     }
@@ -251,7 +264,9 @@ impl SimplePluginCommand for ParseUlid {
         input: &Value,
     ) -> Result<Value, LabeledError> {
         let ulid: Ulid = input.coerce_str()?.parse::<Ulid>().map_err(|e| {
-            LabeledError::new("Failed to parse ulid").with_label(e.to_string(), input.span())
+            LabeledError::new("Failed to parse ulid")
+                .with_label(e.to_string(), input.span())
+                .with_code(ERR_INVALID_ULID)
         })?;
 
         let date: DateTime<Utc> = ulid.datetime().into();
