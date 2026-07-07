@@ -53,29 +53,25 @@ impl SimplePluginCommand for RandomUlid {
                 (Type::Nothing, Type::String),
                 (Type::Date, Type::String),
                 (
-                    Type::Record(Box::new([
-                        (K_TS.into(), Type::Date),
-                        (K_RND.into(), Type::String),
-                    ])),
+                    Type::Record(
+                        vec![(K_TS.into(), Type::Date), (K_RND.into(), Type::String)].into(),
+                    ),
                     Type::String,
                 ),
                 (
-                    Type::Record(Box::new([
-                        (K_TS.into(), Type::Date),
-                        (K_RND.into(), Type::Int),
-                    ])),
+                    Type::Record(vec![(K_TS.into(), Type::Date), (K_RND.into(), Type::Int)].into()),
                     Type::String,
                 ),
                 (
-                    Type::Record(Box::new([(K_TS.into(), Type::Date)])),
+                    Type::Record(vec![(K_TS.into(), Type::Date)].into()),
                     Type::String,
                 ),
                 (
-                    Type::Record(Box::new([(K_RND.into(), Type::String)])),
+                    Type::Record(vec![(K_RND.into(), Type::String)].into()),
                     Type::String,
                 ),
                 (
-                    Type::Record(Box::new([(K_RND.into(), Type::Int)])),
+                    Type::Record(vec![(K_RND.into(), Type::Int)].into()),
                     Type::String,
                 ),
             ])
@@ -241,10 +237,7 @@ impl SimplePluginCommand for ParseUlid {
             .search_terms(vec!["parse".into(), "ulid".into(), "date".into()])
             .input_output_types(vec![(
                 Type::String,
-                Type::Record(Box::new([
-                    (K_TS.into(), Type::Date),
-                    (K_RND.into(), Type::String),
-                ])),
+                Type::Record(vec![(K_TS.into(), Type::Date), (K_RND.into(), Type::String)].into()),
             )])
     }
 
