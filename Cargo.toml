@@ -1,6 +1,6 @@
 [package]
 name = "nu_plugin_ulid"
-version = "0.23.0"
+version = "0.24.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/lizclipse/nu_plugin_ulid"
@@ -10,10 +10,10 @@ description = "A nushell plugin that adds various ulid commands"
 
 [dependencies]
 chrono = "0.4.45"
-nu-plugin = "0.114.0"
-nu-protocol = { version = "0.114.0", features = ["plugin"] }
-ulid = { version = "1.2.1", features = ["uuid"] }
-uuid = "1.23.4"
+nu-plugin = "0.115.0"
+nu-protocol = { version = "0.115.0", features = ["plugin"] }
+ulid = { version = "3.0.0", features = ["uuid"] }
+uuid = "1.24.1"
 
 [profile.release]
 codegen-units = 1

@@ -92,7 +92,7 @@ impl SimplePluginCommand for RandomUlid {
             Example {
                 description: "Generate a random ulid based on the current time",
                 example: "random ulid",
-                result: Some(Value::test_string(Ulid::new().to_string())),
+                result: Some(Value::test_string(Ulid::generate().to_string())),
             },
             Example {
                 description: "Generate a random ulid based on the given timestamp",
@@ -199,7 +199,7 @@ impl RandomUlid {
 
     fn generate(&self, timestamp: Option<SystemTime>, random: UlidRandom) -> Ulid {
         match (timestamp, random) {
-            (None, UlidRandom::Random) => Ulid::new(),
+            (None, UlidRandom::Random) => Ulid::generate(),
             (Some(ts), UlidRandom::Random) => Ulid::from_datetime(ts),
             (ts, UlidRandom::Set(r)) => Ulid::from_parts(unix_millis(ts), r),
             (ts, UlidRandom::Zeros) => Ulid::from_parts(unix_millis(ts), 0),
